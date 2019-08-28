@@ -20,9 +20,11 @@ def print_log(file):
             f.write(s)
     return write_log
 
-
-_, term_width = os.popen('stty size', 'r').read().split()
-term_width = int(term_width)
+try:
+    _, term_width = os.popen('stty size', 'r').read().split()
+    term_width = int(term_width)
+except Exception as e:
+    term_width = 100
 
 TOTAL_BAR_LENGTH = 86.
 last_time = time.time()
