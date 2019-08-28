@@ -49,3 +49,6 @@ If you use this code for your research, please kindly cite our paper:
   year      = {2018}
 }
 ```
+
+**注：**
+1. 修改配置文件 *.yaml；
