@@ -161,7 +161,7 @@ def train_model(model, data, optim, epoch, params):
                 raise e
 
         utils.progress_bar(params['updates'], config.eval_interval)
-        params['updates'] += 1
+        
 
         if params['updates'] % config.eval_interval == 0:
             params['log']("epoch: %3d, loss: %6.3f, time: %6.3f, updates: %8d, accuracy: %2.2f\n"
@@ -182,6 +182,7 @@ def train_model(model, data, optim, epoch, params):
         if params['updates'] % config.save_interval == 0:
             save_model(params['log_path']+'checkpoint.pt', model, optim, params['updates'])
 
+        params['updates'] += 1
     optim.updateLearningRate(score=0, epoch=epoch)
 
 
