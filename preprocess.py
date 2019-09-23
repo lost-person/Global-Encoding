@@ -71,7 +71,7 @@ def saveVocabulary(name, vocab, file):
     vocab.writeFile(file)
 
 
-def makeData(srcFile, tgtFile, srcDicts, tgtDicts, save_srcFile, save_tgtFile, lim=0):
+def makeData(srcFile, tgtFile, srcDicts, tgtDicts, save_srcFile, save_tgtFile, pointer_gen = False, lim=0):
     sizes = 0
     count, empty_ignored, limit_ignored = 0, 0, 0
 
@@ -83,6 +83,10 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts, save_srcFile, save_tgtFile, l
     tgtIdF = open(save_tgtFile + '.id', 'w')
     srcStrF = open(save_srcFile + '.str', 'w', encoding='utf8')
     tgtStrF = open(save_tgtFile + '.str', 'w', encoding='utf8')
+
+    if pointer_gen:
+        srcIdOOvF = open(save_srcFile, '_oov.id', 'w')
+        tgtIdOOvF = open(save_tgtFile, '_oov.id', 'w')
 
     while True:
         sline = srcF.readline()
@@ -123,9 +127,18 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts, save_srcFile, save_tgtFile, l
 
             srcIds = srcDicts.convertToIdx(srcWords, utils.UNK_WORD)
             tgtIds = tgtDicts.convertToIdx(tgtWords, utils.UNK_WORD, utils.BOS_WORD, utils.EOS_WORD)
+            if pointer_gen:
+                srcIdOOvs, oovs = srcDicts.convertToIdxandOOVs(srcWords, utils.UNK_WORD)
+                tgtIdOOvs = tgtDicts.convertToIdxwithOOVs(tgtWords, utils.UNK_WORD, utils.BOS_WORD, 
+                                utils.EOS_WORD, oovs)
 
             srcIdF.write(" ".join(list(map(str, srcIds)))+'\n')
             tgtIdF.write(" ".join(list(map(str, tgtIds)))+'\n')
+
+            if pointer_gen:
+                srcIdOOvF.write(" ".join(list(map(str, srcIdOOvs)))+'\n')
+                tgtIdOOvF.write(" ".join(list(map(str, tgtIdOOvs)))+'\n')
+
             if not opt.src_char:
                 srcStrF.write(" ".join(srcWords)+'\n')
             else:
@@ -146,6 +159,8 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts, save_srcFile, save_tgtFile, l
 
     srcF.close()
     tgtF.close()
+    srcIdOOvF.close()
+    tgtIdOOvF.close()
     srcStrF.close()
     tgtStrF.close()
     srcIdF.close()
@@ -188,10 +203,10 @@ def main():
         dicts['tgt'] = makeVocabulary(train_tgt, opt.tgt_trun, opt.tgt_filter, opt.tgt_char, dicts['tgt'], opt.tgt_vocab_size)
 
     print('Preparing training ...')
-    train = makeData(train_src, train_tgt, dicts['src'], dicts['tgt'], save_train_src, save_train_tgt)
+    train = makeData(train_src, train_tgt, dicts['src'], dicts['tgt'], save_train_src, save_train_tgt, True)
 
     print('Preparing validation ...')
-    valid = makeData(valid_src, valid_tgt, dicts['src'], dicts['tgt'], save_valid_src, save_valid_tgt)
+    valid = makeData(valid_src, valid_tgt, dicts['src'], dicts['tgt'], save_valid_src, save_valid_tgt, True)
 
     print('Preparing test ...')
     test = makeData(test_src, test_tgt, dicts['src'], dicts['tgt'], save_test_src, save_test_tgt)

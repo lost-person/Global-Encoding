@@ -144,6 +144,18 @@ class Dict(object):
 
 
     def convertToIdxandOOVs(self, labels, unkWord, bosWord=None, eosWord=None):
+        """
+        将文档中的词转换为对应的idx，并对文档中的oov单词就行处理.
+
+        Args:   
+            labels: list 单词
+            unkword: str unkown work, idx = 1
+            bosword: str begin of sentence, idx = 2
+            eosWord: str end of sentence, idx = 3
+        Returns:
+            vec: tensor idx list of idx
+            oovs: dict key: oov-word, value: idx
+        """
         vec = []
         oovs = OrderedDict()
 
@@ -152,9 +164,9 @@ class Dict(object):
 
         unk = self.lookup(unkWord)
         for label in labels:
-            id = self.lookup(label, default=unk)
-            if id != unk:
-                vec += [id]
+            idx = self.lookup(label, default=unk)
+            if idx != unk:
+                vec += [idx]
             else:
                 if label not in oovs:
                     oovs[label] = len(oovs)+self.size()
@@ -164,7 +176,7 @@ class Dict(object):
         if eosWord is not None:
             vec += [self.lookup(eosWord)]
 
-        return torch.LongTensor(vec), oovs
+        return vec, oovs
 
     def convertToIdxwithOOVs(self, labels, unkWord, bosWord=None, eosWord=None, oovs=None):
         vec = []
@@ -174,16 +186,16 @@ class Dict(object):
 
         unk = self.lookup(unkWord)
         for label in labels:
-            id = self.lookup(label, default=unk)
-            if id == unk and label in oovs:
+            idx = self.lookup(label, default=unk)
+            if idx == unk and label in oovs:
                 vec += [oovs[label]]
             else:
-                vec += [id]
+                vec += [idx]
 
         if eosWord is not None:
             vec += [self.lookup(eosWord)]
 
-        return torch.LongTensor(vec)
+        return vec
 
 
     # Convert `idx` to labels. If index `stop` is reached, convert it and return.
