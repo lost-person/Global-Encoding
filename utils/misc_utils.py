@@ -10,6 +10,8 @@ class AttrDict(dict):
 
 
 def read_config(path):
+    if path =='':
+        return AttrDict()
     return AttrDict(yaml.load(open(path, 'r')))
 
 
@@ -20,11 +22,11 @@ def print_log(file):
             f.write(s)
     return write_log
 
-try:
-    _, term_width = os.popen('stty size', 'r').read().split()
-    term_width = int(term_width)
-except Exception as e:
-    term_width = 100
+# try:
+#     _, term_width = os.popen('stty size', 'r').read().split()
+#     term_width = int(term_width)
+# except Exception as e:
+term_width = 100
 
 TOTAL_BAR_LENGTH = 86.
 last_time = time.time()

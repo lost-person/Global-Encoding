@@ -1,0 +1,19 @@
+loading data...
+
+building model...
+
+Decaying learning rate to 0.00015
+Decaying learning rate to 7.5e-05
+Decaying learning rate to 3.75e-05
+Decaying learning rate to 1.875e-05
+Decaying learning rate to 9.375e-06
+Decaying learning rate to 4.6875e-06
+Decaying learning rate to 2.34375e-06
+Decaying learning rate to 1.17187e-06
+Decaying learning rate to 5.85937e-07
+Decaying learning rate to 2.92969e-07
+Decaying learning rate to 1.46484e-07
+Decaying learning rate to 7.32422e-08
+Decaying learning rate to 3.66211e-08
+Decaying learning rate to 1.83105e-08
+Decaying learning rate to 9.15527e-09

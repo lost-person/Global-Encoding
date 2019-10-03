@@ -47,7 +47,7 @@ class Dict(object):
 
     # Write entries to a file.
     def writeFile(self, filename):
-        with open(filename, 'w') as file:
+        with open(filename, 'w', encoding='utf8') as file:
             for i in range(self.size()):
                 label = self.idxToLabel[i]
                 file.write('%s %d\n' % (label, i))
@@ -82,25 +82,25 @@ class Dict(object):
         for label in labels:
             self.addSpecial(label)
 
-    # Add `label` in the dictionary. Use `idx` as its index if given.
+    # Add `label` in the dictionary. Use `idx` as its index if given. 返回加入词的id
     def add(self, label, idx=None):
+        # 将label转小写
         label = label.lower() if self.lower else label
-        if idx is not None:
+        if idx is not None:# 进行id与label的双向映射，向词表加入新词
             self.idxToLabel[idx] = label
             self.labelToIdx[label] = idx
-        else:
+        else: # id为空，给出label对应的idx
             if label in self.labelToIdx:
                 idx = self.labelToIdx[label]
-            else:
+            else: # 加入新词
                 idx = len(self.idxToLabel)
                 self.idxToLabel[idx] = label
                 self.labelToIdx[label] = idx
-
+        # 若为新词，则为1，否则freq加一
         if idx not in self.frequencies:
             self.frequencies[idx] = 1
         else:
             self.frequencies[idx] += 1
-
         return idx
 
     # Return a new dictionary with the `size` most frequent entries.
@@ -116,14 +116,13 @@ class Dict(object):
 
         newDict = Dict()
         newDict.lower = self.lower
-
         # Add special entries in all cases.
         for i in self.special:
             newDict.addSpecial(self.idxToLabel[i])
 
         for i in idx[:size]:
             newDict.add(self.idxToLabel[i])
-
+        # 返回截断 后的词表
         return newDict
 
     # Convert `labels` to indices. Use `unkWord` if not found.
@@ -142,55 +141,41 @@ class Dict(object):
 
         return vec
 
-
     def convertToIdxandOOVs(self, labels, unkWord, bosWord=None, eosWord=None):
-        """
-        将文档中的词转换为对应的idx，并对文档中的oov单词就行处理.
-
-        Args:   
-            labels: list 单词
-            unkword: str unkown work, idx = 1
-            bosword: str begin of sentence, idx = 2
-            eosWord: str end of sentence, idx = 3
-        Returns:
-            vec: tensor idx list of idx
-            oovs: dict key: oov-word, value: idx
-        """
+        """转换为id并将oov列表返回"""
         vec = []
         oovs = OrderedDict()
-
+        # 若bosWord则表示tgt，否则为src
         if bosWord is not None:
             vec += [self.lookup(bosWord)]
-
         unk = self.lookup(unkWord)
         for label in labels:
-            idx = self.lookup(label, default=unk)
-            if idx != unk:
-                vec += [idx]
+            id = self.lookup(label, default=unk)
+            if id != unk: # 转换为正常id，则加入列表
+                vec += [id]
             else:
                 if label not in oovs:
-                    oovs[label] = len(oovs)+self.size()
-                oov_num = oovs[label]
+                    oovs[label] = len(oovs)+self.size() # oovs的长度加上词表大小为oovs的id
+                oov_num = oovs[label] #返回oov的id
                 vec += [oov_num]
-
         if eosWord is not None:
             vec += [self.lookup(eosWord)]
-
+        # 返回oov列表，并且返回扩展词表的data
         return vec, oovs
 
     def convertToIdxwithOOVs(self, labels, unkWord, bosWord=None, eosWord=None, oovs=None):
+        # 不返回oov列表，只转换为id，因为对tgt的oov不做记录
         vec = []
-
         if bosWord is not None:
             vec += [self.lookup(bosWord)]
 
         unk = self.lookup(unkWord)
         for label in labels:
-            idx = self.lookup(label, default=unk)
-            if idx == unk and label in oovs:
+            id = self.lookup(label, default=unk)
+            if id == unk and label in oovs:
                 vec += [oovs[label]]
             else:
-                vec += [idx]
+                vec += [id]
 
         if eosWord is not None:
             vec += [self.lookup(eosWord)]
@@ -200,6 +185,7 @@ class Dict(object):
 
     # Convert `idx` to labels. If index `stop` is reached, convert it and return.
     def convertToLabels(self, idx, stop, oovs=None):
+        # idx=3则直接返回
         labels = []
 
         for i in idx:

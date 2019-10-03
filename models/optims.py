@@ -5,6 +5,11 @@ from torch.nn.utils import clip_grad_norm_
 class Optim(object):
 
     def set_parameters(self, params):
+        """
+        设置optim参数，从创建模型处使用
+        :param : 要设置的参数，在yaml文件中
+        :return:
+        """
         self.params = list(params)  # careful: params may be a generator
         if self.method == 'sgd':
             self.optimizer = optim.SGD(self.params, lr=self.lr)

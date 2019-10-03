@@ -1,6 +1,9 @@
+"""
+定义模型参数，以及convert_to_config函数
+"""
 def model_opts(parser):
 
-    parser.add_argument('-config', default='lcsts.yaml', type=str,
+    parser.add_argument('-config', default='', type=str,
                         help="config file")
     parser.add_argument('-gpus', default=[], nargs='+', type=int,
                         help="Use CUDA on the listed devices.")
