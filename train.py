@@ -48,7 +48,7 @@ config['enc_num_layers']=3
 config['bidirectional']=True
 config['dropout']=0.0
 config['max_time_step']=50
-config['eval_interval']=10000
+config['eval_interval']=10
 config['save_interval']=3000
 config['metrics']=['rouge']
 config['shared_vocab']=True
@@ -373,9 +373,9 @@ def eval_model(model, data, params):
             else:
                 samples, alignment = model.sample(src, src_len)
         # 将结果转换为label并加入list
-        candidate += ["".join(tgt_vocab.convertToLabels(s, utils.EOS)) for s in samples]
-        source += ["".join(ori_src) for ori_src in original_src]
-        reference += ["".join(ori_tgt) for ori_tgt in original_tgt]
+        candidate += [" ".join(tgt_vocab.convertToLabels(s, utils.EOS)) for s in samples]
+        source = [" ".join(ori_src) for ori_src in original_src]
+        reference = [" ".join(list(ori_tgt[0])) for ori_tgt in original_tgt]
         if alignment is not None:
             alignments += [align for align in alignment]
 
@@ -399,15 +399,16 @@ def eval_model(model, data, params):
             if len(cand) == 0:
                 print('Error!')
         candidate = cands
+    print(candidate[0:2])
     # 写入文件
     with codecs.open(params['log_path']+'candidate.txt','w+','utf-8') as f:
         for i in range(len(candidate)):
-            f.write(" ".join(candidate[i])+'\n')
+            f.write("".join(candidate[i])+'\n')
+    # 写入文件
+    with codecs.open(params['log_path']+'reference.txt','w+','utf-8') as f:
+        for i in range(len(reference)):
+            f.write("".join(reference[i])+'\n')
     score = {}
-    print("cand")
-    print(candidate)
-    print("ref")
-    print(reference)
     # 使用rouge进行评测
     for metric in config.metrics:
         score[metric] = getattr(utils, metric)(reference, candidate, params['log_path'], params['log'], config)
