@@ -177,7 +177,7 @@ class seq2seq(nn.Module):
             inp = var(torch.stack([b.getCurrentState() for b in beam])
                       .t().contiguous().view(-1))
             # Run one step.
-            output, decState, attn = self.decoder(inp, decState)
+            output, decState, attn, p = self.decoder(inp, decState)
             # decOut: beam x rnn_size
             # (b) Compute a vector of batch*beam word scores.
             output = unbottle(self.log_softmax(output))

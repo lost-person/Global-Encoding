@@ -119,14 +119,16 @@ def padding(data):
         tgtoov_pad = torch.zeros(len(tgt), max(tgt_len)).long()
         for i, s in enumerate(src_oov):
             end = src_len[i]
-            srcoov_pad[i, :end] = torch.LongTensor(s[end - 1::-1])
+            # srcoov_pad[i, :end] = torch.LongTensor(s[end - 1::-1])
+            srcoov_pad[i, :end] = torch.LongTensor(s)[:end]
         for i, s in enumerate(tgt_oov):
             end = tgt_len[i]
             tgtoov_pad[i, :end] = torch.LongTensor(s)[:end]  # 并未进行翻转
         oovs = list(oovs)
     for i, s in enumerate(src):
         end = src_len[i]
-        src_pad[i, :end] = torch.LongTensor(s[end-1::-1]) # 取从下标为end-1的元素，翻转读取，即翻转取整个句子
+        # src_pad[i, :end] = torch.LongTensor(s[end-1::-1]) # 取从下标为end-1的元素，翻转读取，即翻转取整个句子
+        src_pad[i, :end] = torch.LongTensor(s)[:end]
     for i, s in enumerate(tgt):
         end = tgt_len[i]
         tgt_pad[i, :end] = torch.LongTensor(s)[:end] # 并未进行翻转

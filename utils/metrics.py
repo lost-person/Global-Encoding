@@ -48,6 +48,14 @@ def rouge(reference, candidate, log_path, print_log, config):
             f.write(" ".join(reference[i]).replace(' <\s> ', '\n') + '\n')
         with codecs.open(cand_dir+"%06d_candidate.txt" % i, 'w', 'utf-8') as f:
             f.write(" ".join(candidate[i]).replace(' <\s> ', '\n').replace('<unk>', 'UNK') + '\n')
+    
+    cand_len = 0
+    for cand in candidate:
+        cand_len += len(cand)
+    
+    if cand_len == 0:
+        return 0.0, 0.0, 0.0
+
     rouge = Rouge()
     scores = rouge.get_scores(candidate, reference, avg=True)
     f_score = [scores['rouge-1']['f'], scores['rouge-2']['f'], scores['rouge-l']['f']]
