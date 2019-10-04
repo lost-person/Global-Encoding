@@ -5,7 +5,7 @@ def model_opts(parser):
 
     parser.add_argument('-config', default='', type=str,
                         help="config file")
-    parser.add_argument('-gpus', default=[], nargs='+', type=int,
+    parser.add_argument('-gpus', default=[2, 3], nargs='+', type=int,
                         help="Use CUDA on the listed devices.")
     parser.add_argument('-restore', default='', type=str,
                         help="restore checkpoint")
@@ -17,7 +17,7 @@ def model_opts(parser):
                         help="Mode selection")
     parser.add_argument('-module', default='seq2seq', type=str,
                         help="Module selection")
-    parser.add_argument('-log', default='', type=str,
+    parser.add_argument('-log', default='output_rouge', type=str,
                         help="log directory")
     parser.add_argument('-num_processes', type=int, default=4,
                         help="number of processes")

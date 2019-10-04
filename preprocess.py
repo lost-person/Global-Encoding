@@ -7,9 +7,9 @@ parser.add_argument('-load_data', required=True,
                     help="input file for the data")
 parser.add_argument('-save_data', required=True,
                     help="Output file for the prepared data")
-parser.add_argument('-src_vocab_size', type=int, default=3000,
+parser.add_argument('-src_vocab_size', type=int, default=50000,
                     help="Size of the source vocabulary")
-parser.add_argument('-tgt_vocab_size', type=int, default=3000,
+parser.add_argument('-tgt_vocab_size', type=int, default=50000,
                     help="Size of the target vocabulary")
 parser.add_argument('-src_filter', type=int, default=0,
                     help="Maximum source sequence length")

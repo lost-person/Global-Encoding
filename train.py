@@ -30,8 +30,8 @@ opt = parser.parse_args()
 config = utils.read_config(opt.config)
 
 # 手动加入yaml参数
-config['data'] = '../LCSTS_ORIGIN/DATA/res/'
-config['logF'] = '../experiments/lcsts/'
+config['data'] = './LCSTS_ORIGIN/res/zl.'
+config['logF'] = './experiments/lcsts/'
 config['epoch']=20
 config['batch_size']=64
 config['optim']='adam'
@@ -48,9 +48,9 @@ config['enc_num_layers']=3
 config['bidirectional']=True
 config['dropout']=0.0
 config['max_time_step']=50
-config['eval_interval']=10
-config['save_interval']=3
-config['metrics']=['bleu']
+config['eval_interval']=10000
+config['save_interval']=3000
+config['metrics']=['rouge']
 config['shared_vocab']=True
 config['beam_size']=10
 config['unk']=True
@@ -230,7 +230,6 @@ def train_model(model, data, optim, epoch, params):
                 else:
                     loss, outputs = model(src, lengths, dec, targets, srcoov_pad=srcoov_pad, tgtoov_pad=tgtoov_pad, oov_list=oov_list)  # 调用forward，返回交叉熵损失以及输出概率分布，outputs[len, batch, voc_size]
 
-                break
                 pred = outputs.max(2)[1]  # 找出概率最大的那个作为预测[len, batch]，取下标
                 targets = targets.t()
                 num_correct = pred.eq(targets).masked_select(
@@ -335,6 +334,7 @@ def train_model(model, data, optim, epoch, params):
                 score = eval_model(model, data, params)
                 for metric in config.metrics: #只有rouge
                     params[metric].append(score[metric])
+                    print(max(params[metric]))
                     if score[metric] >= max(params[metric]):
                         with codecs.open(params['log_path']+'best_'+metric+'_prediction.txt','w','utf-8') as f:
                             f.write(codecs.open(params['log_path']+'candidate.txt','r','utf-8').read())
@@ -373,9 +373,9 @@ def eval_model(model, data, params):
             else:
                 samples, alignment = model.sample(src, src_len)
         # 将结果转换为label并加入list
-        candidate += [tgt_vocab.convertToLabels(s, utils.EOS) for s in samples]
-        source += original_src
-        reference += original_tgt
+        candidate += ["".join(tgt_vocab.convertToLabels(s, utils.EOS)) for s in samples]
+        source += ["".join(ori_src) for ori_src in original_src]
+        reference += ["".join(ori_tgt) for ori_tgt in original_tgt]
         if alignment is not None:
             alignments += [align for align in alignment]
 
@@ -395,7 +395,7 @@ def eval_model(model, data, params):
                         print("%d %d\n" % (len(s), idx))
                 else:
                     cand.append(word)
-            cands.append(cand)
+            cands.append("".join(cand))
             if len(cand) == 0:
                 print('Error!')
         candidate = cands
@@ -404,6 +404,10 @@ def eval_model(model, data, params):
         for i in range(len(candidate)):
             f.write(" ".join(candidate[i])+'\n')
     score = {}
+    print("cand")
+    print(candidate)
+    print("ref")
+    print(reference)
     # 使用rouge进行评测
     for metric in config.metrics:
         score[metric] = getattr(utils, metric)(reference, candidate, params['log_path'], params['log'], config)
@@ -498,7 +502,7 @@ def main():
             train_model(model, data, optim, i, params)
         # 打印rouge
         for metric in config.metrics:
-            print_log("Best %s score: %.2f\n" % (metric, max(params[metric])))
+            print_log("Best %s score: %s\n" % (metric, max(params[metric])))
     else:
         score = eval_model(model, data, params)
 
