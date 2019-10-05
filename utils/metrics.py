@@ -106,8 +106,10 @@ def rouge(reference, candidate, log_path, print_log, config):
 
 def test():
     
-    cand = ["团购o2o："]
-    ref = ["团购o2o："]
+    cand = "团 购 o2o ："
+    ref = "团 购 o2o ："
     rouge = Rouge()
-    scores = rouge.get_scores(cand, ref, avg=True)
+    scores = rouge.get_scores(cand, ref)
     print(scores)
+
+test()

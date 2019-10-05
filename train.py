@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import torch.utils.data
 import lr_scheduler as L
 
@@ -12,6 +13,7 @@ import opts
 import models
 import utils
 import codecs
+from rouge import Rouge
 
 import numpy as np
 import matplotlib
@@ -21,6 +23,7 @@ import matplotlib.ticker as ticker
 
 parser = argparse.ArgumentParser(description='train.py')
 parser.add_argument('-pointer', action='store_true', help='add the copy mechanism')
+parser.add_argument('-rl', action='store_true', help='add the reinforce learning')
 # 使用opts文件参数配置
 opts.model_opts(parser)
 # 调用 parse_args() 来解析程序的命令行，返回保存有命令行参数值的opt对象
@@ -48,7 +51,7 @@ config['enc_num_layers']=3
 config['bidirectional']=True
 config['dropout']=0.0
 config['max_time_step']=50
-config['eval_interval']=10
+config['eval_interval']=10000
 config['save_interval']=3000
 config['metrics']=['rouge']
 config['shared_vocab']=True
@@ -59,6 +62,7 @@ config['selfatt']=True
 config['schesamp']=False
 config['swish']=True
 config['length_norm']=True
+config['alpha']=0.3
 torch.manual_seed(opt.seed)
 # 将opt中的参数加入config
 opts.convert_to_config(opt, config)
@@ -188,6 +192,7 @@ def train_model(model, data, optim, epoch, params):
     :param params: 模型参数，字典形式，包括rouge
     :return: 无
     """
+    tgt_vocab = data['tgt_vocab']
     # 表示当前为训练模式
     model.train()
     # 读取batch数据
@@ -301,14 +306,49 @@ def train_model(model, data, optim, epoch, params):
                     else:
                         loss, outputs = model(src, lengths, dec, targets)
                 else:
-                    loss, outputs = model(src, lengths, dec, targets)# 调用forward，返回交叉熵损失以及输出概率分布，outputs[len, batch, voc_size]
-                print(outputs.size())
+                    loss, outputs = model(src, lengths, dec, targets)# 调用forward，返回交叉熵损失以及输出概率分布，outputs[len, batch, vocab_size]
+                
                 pred = outputs.max(2)[1] # 找出概率最大的那个作为预测[len, batch]，取下标
+                
+                if config.rl:
+                    sample_pred = []
+                    for i in range(outputs.size(0)):
+                        sample_pred.append(torch.multinomial(outputs[i], 1))
+                    
+                    # 计算 loss
+                    criterion = nn.CrossEntropyLoss(ignore_index=utils.PAD, reduction='none')
+                    criterion.cuda()
+                    sample_loss = [] # [batch_size]
+                    for i in range(outputs.size(1)):
+                        sample_loss.append(criterion(outputs[:, i, :], sample_pred[:, i]))
+                    sample_loss = torch.tensor(sample_loss)
+                    
+                    # 转换为词
+                    pred_sen_list = [" ".join(tgt_vocab.convertToLabels(sen, utils.EOS)) for sen in pred.t()]
+                    sample_pred_sen_list = [" ".join(tgt_vocab.convertToLabels(sen, utils.EOS)) for sen in sample_pred.t()]
+                    reference = [" ".join(list(ori_tgt[0])) for ori_tgt in original_tgt]
+                    
+                    # 计算 rouge
+                    rouge = Rouge()
+                    pred_score_list = rouge.get_scores(pred_sen_list, reference)
+                    sample_pred_score_list = rouge.get_scores(sample_pred_sen_list, reference)
+
+                    neg_reward = []
+                    for pred_score, sample_score in zip(pred_score_list, sample_pred_score_list):
+                        pred_mean_score = 0.5 * (pred_score['rouge-2']['f'] + pred_score['rouge-l']['f'])
+                        sample_mean_score = 0.5 * (sample_score['rouge-2']['f'] + sample_score['rouge-l']['f'])
+                        neg_reward.append(sample_mean_score - pred_mean_score)
+                    
+                    neg_reward = torch.tensor(neg_reward)
+                    rl_loss = - torch.mul(sample_loss, neg_reward) / config.batch_size
+
                 targets = targets.t()
                 num_correct = pred.eq(targets).masked_select(targets.ne(utils.PAD)).sum().item()# eq函数判断相等返回同等大小矩阵，masked_select进行mask去掉padding，求和计算正确个数
                 num_total = targets.ne(utils.PAD).sum().item() #总个数
                 if config.max_split == 0:
                     loss = torch.sum(loss) / num_total
+                    if config.rl:
+                        loss += config.alpha * rl_loss
                     loss.backward() # 反向传播损失
                 optim.step()
 
@@ -338,7 +378,7 @@ def train_model(model, data, optim, epoch, params):
                     if score[metric] >= max(params[metric]):
                         with codecs.open(params['log_path']+'best_'+metric+'_prediction.txt','w','utf-8') as f:
                             f.write(codecs.open(params['log_path']+'candidate.txt','r','utf-8').read())
-                        #ckpt保存模型
+                        # ckpt保存模型
                         save_model(params['log_path']+'best_'+metric+'_checkpoint.pt', model, optim, params['updates'])
                 model.train()
                 params['report_loss'], params['report_time'] = 0, time.time()
@@ -374,8 +414,8 @@ def eval_model(model, data, params):
                 samples, alignment = model.sample(src, src_len)
         # 将结果转换为label并加入list
         candidate += [" ".join(tgt_vocab.convertToLabels(s, utils.EOS)) for s in samples]
-        source = [" ".join(ori_src) for ori_src in original_src]
-        reference = [" ".join(list(ori_tgt[0])) for ori_tgt in original_tgt]
+        source += ["".join(ori_src) for ori_src in original_src]
+        reference += [" ".join(list(ori_tgt[0])) for ori_tgt in original_tgt]
         if alignment is not None:
             alignments += [align for align in alignment]
 
@@ -399,7 +439,6 @@ def eval_model(model, data, params):
             if len(cand) == 0:
                 print('Error!')
         candidate = cands
-    print(candidate[0:2])
     # 写入文件
     with codecs.open(params['log_path']+'candidate.txt','w+','utf-8') as f:
         for i in range(len(candidate)):
