@@ -43,6 +43,7 @@ def rouge(reference, candidate, log_path, print_log, config):
     if not os.path.exists(cand_dir):
         os.mkdir(cand_dir)
 
+    candidate = [" ".join(list(can)) for can in candidate]
     for i in range(len(reference)):
         with codecs.open(ref_dir+"%06d_reference.txt" % i, 'w', 'utf-8') as f:
             f.write("".join(reference[i]).replace(' <\s> ', '\n') + '\n')
@@ -111,5 +112,3 @@ def test():
     rouge = Rouge()
     scores = rouge.get_scores(cand, ref)
     print(scores)
-
-test()

@@ -5,15 +5,15 @@ def model_opts(parser):
 
     parser.add_argument('-config', default='', type=str,
                         help="config file")
-    parser.add_argument('-gpus', default=[2, 3], nargs='+', type=int,
+    parser.add_argument('-gpus', default=[0, 1], nargs='+', type=int,
                         help="Use CUDA on the listed devices.")
-    parser.add_argument('-restore', default='', type=str,
+    parser.add_argument('-restore', default='experiments/lcsts/output_rouge/best_rouge_checkpoint.pt', type=str,
                         help="restore checkpoint")
     parser.add_argument('-seed', type=int, default=1234,
                         help="Random seed")
     parser.add_argument('-model', default='seq2seq', type=str,
                         help="Model selection")
-    parser.add_argument('-mode', default='train', type=str,
+    parser.add_argument('-mode', default='eval', type=str,
                         help="Mode selection")
     parser.add_argument('-module', default='seq2seq', type=str,
                         help="Module selection")
